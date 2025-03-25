@@ -2,23 +2,23 @@
 
 Dio interceptor: Not Pretty, but Efficient Dio Logger
 
+For projects using `Dio` and containing a large number of requests:
+- lineWidth configures the maximum length of a single line log
+- maxWidth configures the maximum length of a single request/return value, which will be truncated if exceeded
+- compact turns on maxWidth truncation function
+
+适用于使用`Dio`并且包含大量请求的的项目:
+- lineWidth 配置单行日志最大长度
+- maxWidth 配置单个请求/返回的value的最大长度, 超过将被截断
+- compact 开关maxWidth截断功能
+
+
 ## Installation
 ```bash
 dart pub add efficient_dio_logger
 ```
 
 ## Usage
-
-For projects using `Dio` and containing a large number of requests:
-- lineWidth configures the maximum length of a single line log
-- maxWidth configures the maximum length of a single request/return value, which will be truncated if exceeded
-- compact turns on maxWidth truncation function
-
-适用于使用`Dio`并且包含大量请求的的项目: 
-- lineWidth 配置单行日志最大长度
-- maxWidth 配置单个请求/返回的value的最大长度, 超过将被截断
-- compact 开关maxWidth截断功能
-
 
 ```dart
 main() {
