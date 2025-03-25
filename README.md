@@ -57,3 +57,14 @@ main() {
   ));
 }
 ```
+
+## Look like
+![img.png](docs/img.png)
+
+## Meagre with PrettyDioLogger
+
+```dart
+import 'package:efficient_dio_logger/efficient_dio_logger.dart';
+
+typedef PrettyDioLogger = EfficientDioLogger;
+```
