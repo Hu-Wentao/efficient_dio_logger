@@ -53,9 +53,10 @@ class EfficientDioLogger extends Interceptor {
   /// Enable logPrint
   final bool enabled;
 
-  /// Determine the width of the dividing line [_printLine]
-  /// 决定分割线的宽度 [_printLine]
+  /// Determine the width of the dividing line [printLine]
+  /// 决定分割线的宽度 [printLine]
   final int lineWidth;
+
   factory EfficientDioLogger({
     bool request = true,
     bool requestHeader = false,
@@ -84,6 +85,7 @@ class EfficientDioLogger extends Interceptor {
         logPrint: logPrint ?? (l) => log('$l', name: 'EffLogger'),
         enabled: enabled,
       );
+
   EfficientDioLogger.of({
     this.request = true,
     this.requestHeader = true,
@@ -131,18 +133,18 @@ class EfficientDioLogger extends Interceptor {
         if (triggerTime is int) {
           diff = DateTime.timestamp().millisecondsSinceEpoch - triggerTime;
         }
-        _printBoxed(
+        printBoxed(
           header:
-              'DioError ║ Status: ${err.response?.statusCode} ${err.response?.statusMessage} ║ Time: $diff ms',
+              '❌ DioError ║ Status: ${err.response?.statusCode} ${err.response?.statusMessage} ║ Time: $diff ms',
           text: uri.toString(),
         );
         if (err.response != null && err.response?.data != null) {
           logPrint('╔ ${err.type.toString()}');
-          _printResponse(err.response!);
+          printResponse(err.response!);
         }
-        _printLine('╚');
+        printLine('╚');
       } else {
-        _printBoxed(
+        printBoxed(
           header:
               'DioError ║ Status: ${err.response?.statusCode} ║ ${err.type}',
           text: '${err.requestOptions.uri}\n'
@@ -166,10 +168,10 @@ class EfficientDioLogger extends Interceptor {
     }
 
     if (request) {
-      _printRequestHeader(options);
+      printRequestHeader(options);
     }
     if (requestHeader) {
-      _printMapAsTable(options.queryParameters, header: 'Query Parameters');
+      printMapAsTable(options.queryParameters, header: 'Query Parameters');
       final requestHeaders = <String, dynamic>{};
       requestHeaders.addAll(options.headers);
       if (options.contentType != null) {
@@ -183,21 +185,21 @@ class EfficientDioLogger extends Interceptor {
       if (options.receiveTimeout != null) {
         requestHeaders['receiveTimeout'] = options.receiveTimeout?.toString();
       }
-      _printMapAsTable(requestHeaders, header: 'Headers', printEnd: false);
-      _printMapAsTable(extra, header: 'Extras', printEnd: false);
+      printMapAsTable(requestHeaders, header: 'Headers', printEnd: false);
+      printMapAsTable(extra, header: 'Extras', printEnd: false);
     }
     if (requestBody && options.method != 'GET') {
       final dynamic data = options.data;
       if (data != null) {
         if (data is Map) {
-          _printMapAsTable(options.data as Map?, header: 'Body');
+          printMapAsTable(options.data as Map?, header: 'Body');
         } else if (data is FormData) {
           final formDataMap = <String, dynamic>{}
             ..addEntries(data.fields)
             ..addEntries(data.files);
-          _printMapAsTable(formDataMap, header: 'Form data | ${data.boundary}');
+          printMapAsTable(formDataMap, header: 'Form data | ${data.boundary}');
         } else {
-          _printJson(data);
+          printJson(data);
         }
       }
     }
@@ -220,25 +222,25 @@ class EfficientDioLogger extends Interceptor {
     if (triggerTime is int) {
       diff = DateTime.timestamp().millisecondsSinceEpoch - triggerTime;
     }
-    _printResponseHeader(response, diff);
+    printResponseHeader(response, diff);
     if (responseHeader) {
       final responseHeaders = <String, String>{};
       response.headers
           .forEach((k, list) => responseHeaders[k] = list.toString());
-      _printMapAsTable(responseHeaders, header: 'Headers');
+      printMapAsTable(responseHeaders, header: 'Headers');
     }
 
     if (responseBody) {
       logPrint('╔ Body');
-      _printResponse(response);
-      _printLine('╚');
+      printResponse(response);
+      printLine('╚');
     }
     handler.next(response);
   }
 
-  void _printResponse(Response response) {
+  void printResponse(Response response) {
     if (response.data != null) {
-      _printJson(response.data);
+      printJson(response.data);
     }
   }
 
@@ -269,7 +271,7 @@ class EfficientDioLogger extends Interceptor {
   }
 
   /// 打印json,但是截取value的最大长度 [maxWidth]
-  void _printJson(dynamic input) {
+  void printJson(dynamic input) {
     var data = __processValue(input);
     if (data is Map || data is List) {
       data = jsonEncode(data);
@@ -278,30 +280,37 @@ class EfficientDioLogger extends Interceptor {
   }
 
   /// 改写为一行打印
-  void _printMapAsTable(Map? map, {String? header, printEnd = true}) {
+  void printMapAsTable(Map? map, {String? header, printEnd = true}) {
     if (map == null || map.isEmpty) return;
     logPrint('╔ $header ');
-    _printJson(map);
-    if (printEnd) _printLine('╚');
+    printJson(map);
+    if (printEnd) printLine('╚');
   }
 
-  void _printResponseHeader(Response response, int responseTime) {
+  void printResponseHeader(Response response, int responseTime) {
     final uri = response.requestOptions.uri;
     final method = response.requestOptions.method;
-    _printBoxed(
+    final rspEmoji = {
+          2: '✅', // 2xx: 200
+          3: '↪️', // 3xx: redirect ...
+          4: '❓', // 4xx: 403, 404 ...
+          5: '❗', // 5xx:
+        }[(response.statusCode ?? 200) % 100] ??
+        '✔️';
+    printBoxed(
       header:
-          'Response ║ $method ║ Status: ${response.statusCode} ${response.statusMessage}  ║ Time: $responseTime ms ${EfficientDioLogger.tabStep}'
+          '$rspEmoji Response ║ $method ║ Status: ${response.statusCode} ${response.statusMessage}  ║ Time: $responseTime ms ${EfficientDioLogger.tabStep}'
               .padRight(lineWidth ~/ 3 * 2, '<'),
       text: uri.toString(),
       printEnd: !responseBody,
     );
   }
 
-  void _printRequestHeader(RequestOptions options) {
+  void printRequestHeader(RequestOptions options) {
     final uri = options.uri;
     final method = options.method;
-    _printBoxed(
-      header: 'Request ║ $method ${EfficientDioLogger.tabStep}'
+    printBoxed(
+      header: '➡️ Request ║ $method ${EfficientDioLogger.tabStep}'
           .padRight(lineWidth ~/ 3 * 2, '>'),
       text: uri.toString(),
       printEnd: !requestHeader,
@@ -309,14 +318,14 @@ class EfficientDioLogger extends Interceptor {
   }
 
   /// printEnd: 如果打印rsp同时又打印rspBody, 那么rsp无需 printEnd 分割线
-  void _printBoxed({String? header, String? text, bool printEnd = true}) {
+  void printBoxed({String? header, String? text, bool printEnd = true}) {
     logPrint('╔╣ $header');
     logPrint('║  $text');
-    if (printEnd) _printLine('╚');
+    if (printEnd) printLine('╚');
   }
 
-  void _printLine([String pre = '', String suf = '╝']) =>
-      logPrint('$pre${'═' * (lineWidth - 2)}$suf');
+  void printLine([String pre = '', String suf = '╝']) =>
+      logPrint('$pre${'═' * (lineWidth - pre.length - suf.length)}$suf');
 }
 
 /// Filter arguments
