@@ -139,8 +139,8 @@ class EfficientDioLogger extends Interceptor {
           text: uri.toString(),
         );
         if (err.response != null && err.response?.data != null) {
-          logPrint('╔ ${err.type.toString()}');
-          printResponse(err.response!);
+          logPrint('╔ ${err.type.toString()} \n'
+              '${genByJson(err.response?.data)}\n');
         }
         printLine('╚');
       } else {
@@ -199,7 +199,7 @@ class EfficientDioLogger extends Interceptor {
             ..addEntries(data.files);
           printMapAsTable(formDataMap, header: 'Form data | ${data.boundary}');
         } else {
-          printJson(data);
+          logPrint(genByJson(data));
         }
       }
     }
@@ -231,17 +231,11 @@ class EfficientDioLogger extends Interceptor {
     }
 
     if (responseBody) {
-      logPrint('╔ Body');
-      printResponse(response);
-      printLine('╚');
+      logPrint('╔ Body \n'
+          '${genByJson(response.data)}\n'
+          '${genLine('╚')}');
     }
     handler.next(response);
-  }
-
-  void printResponse(Response response) {
-    if (response.data != null) {
-      printJson(response.data);
-    }
   }
 
   dynamic __processValue(dynamic value) {
@@ -270,21 +264,22 @@ class EfficientDioLogger extends Interceptor {
     return value;
   }
 
-  /// 打印json,但是截取value的最大长度 [maxWidth]
-  void printJson(dynamic input) {
+  /// 返回json Str, 但是截取value的最大长度 [maxWidth]
+  /// input 可能为 null
+  String genByJson(dynamic input) {
     var data = __processValue(input);
     if (data is Map || data is List) {
       data = jsonEncode(data);
     }
-    logPrint(data);
+    return '$data';
   }
 
   /// 改写为一行打印
   void printMapAsTable(Map? map, {String? header, printEnd = true}) {
     if (map == null || map.isEmpty) return;
-    logPrint('╔ $header ');
-    printJson(map);
-    if (printEnd) printLine('╚');
+    logPrint('╔ $header \n'
+        '${genByJson(map)}'
+        '${printEnd ? genLine('╚') : ''}');
   }
 
   void printResponseHeader(Response response, int responseTime) {
@@ -319,13 +314,16 @@ class EfficientDioLogger extends Interceptor {
 
   /// printEnd: 如果打印rsp同时又打印rspBody, 那么rsp无需 printEnd 分割线
   void printBoxed({String? header, String? text, bool printEnd = true}) {
-    logPrint('╔╣ $header');
-    logPrint('║  $text');
-    if (printEnd) printLine('╚');
+    logPrint('╔╣ $header \n'
+        '$text \n'
+        '${printEnd ? genLine('╚') : ''}');
   }
 
+  String genLine([String pre = '', String suf = '╝']) =>
+      '$pre${'═' * (lineWidth - pre.length - suf.length)}$suf';
+
   void printLine([String pre = '', String suf = '╝']) =>
-      logPrint('$pre${'═' * (lineWidth - pre.length - suf.length)}$suf');
+      logPrint(genLine(pre, suf));
 }
 
 /// Filter arguments

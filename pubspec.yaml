@@ -1,5 +1,4 @@
 name: efficient_dio_logger
-publish_to: https://pub.dev
 description: "Not pretty, but efficient"
 version: 0.1.0
 repository: https://github.com/Hu-Wentao/efficient_dio_logger
