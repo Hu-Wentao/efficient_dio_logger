@@ -1,4 +1,4 @@
-# Efficient Dio Logger
+# Efficient Dio Logger / EffLogger
 
 Dio interceptor: Not Pretty, but Efficient Dio Logger
 
