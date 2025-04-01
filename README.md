@@ -59,7 +59,7 @@ main() {
 ```
 
 ## Look like
-![img.png](doc/img.png)
+![img.png](https://github.com/Hu-Wentao/efficient_dio_logger/blob/main/doc/img.png?raw=true)
 
 ## Meagre with PrettyDioLogger
 
