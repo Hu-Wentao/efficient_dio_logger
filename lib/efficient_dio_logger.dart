@@ -123,6 +123,7 @@ class EfficientDioLogger extends Interceptor {
       handler.next(err);
       return;
     }
+    final logBuff = StringBuffer();
 
     final triggerTime = err.requestOptions.extra[_timeStampKey];
 
@@ -133,30 +134,36 @@ class EfficientDioLogger extends Interceptor {
         if (triggerTime is int) {
           diff = DateTime.timestamp().millisecondsSinceEpoch - triggerTime;
         }
-        printBoxed(
+        logBuff.write(printBoxed(
           header:
               '❌ DioError ║ Status: ${err.response?.statusCode} ${err.response?.statusMessage} ║ Time: $diff ms',
           text: uri.toString(),
-        );
+          buffOnly: true,
+        ));
         if (err.response != null && err.response?.data != null) {
-          logPrint('╔ ${err.type.toString()} \n'
-              '${genByJson(err.response?.data)}\n');
+          logBuff.write(StringBuffer(
+            '\t ╔ ${err.type.toString()} \n'
+            '${genByJson(err.response?.data)}\n',
+          ));
         }
-        printLine('╚');
+        // printLine('╚');
       } else {
-        printBoxed(
+        logBuff.write(printBoxed(
           header:
-              'DioError ║ Status: ${err.response?.statusCode} ║ ${err.type}',
+              '❌ DioError ║ Status: ${err.response?.statusCode} ║ ${err.type}',
           text: '${err.requestOptions.uri}\n'
               '${err.message}',
-        );
+          buffOnly: true,
+        ));
       }
     }
+    logPrint(logBuff.toString());
     handler.next(err);
   }
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    StringBuffer logCache = StringBuffer();
     final extra = Map.of(options.extra);
     options.extra[_timeStampKey] = DateTime.timestamp().millisecondsSinceEpoch;
 
@@ -168,10 +175,13 @@ class EfficientDioLogger extends Interceptor {
     }
 
     if (request) {
-      printRequestHeader(options);
+      logCache.write(printRequestHeader(options, buffOnly: true));
     }
     if (requestHeader) {
-      printMapAsTable(options.queryParameters, header: 'Query Parameters');
+      logCache.write(
+        printMapAsTable(options.queryParameters,
+            header: 'Query Parameters', buffOnly: true),
+      );
       final requestHeaders = <String, dynamic>{};
       requestHeaders.addAll(options.headers);
       if (options.contentType != null) {
@@ -185,24 +195,38 @@ class EfficientDioLogger extends Interceptor {
       if (options.receiveTimeout != null) {
         requestHeaders['receiveTimeout'] = options.receiveTimeout?.toString();
       }
-      printMapAsTable(requestHeaders, header: 'Headers', printEnd: false);
-      printMapAsTable(extra, header: 'Extras', printEnd: false);
+      logCache.writeAll([
+        printMapAsTable(requestHeaders,
+            header: 'Headers', printEnd: false, buffOnly: true),
+        printMapAsTable(extra,
+            header: 'Extras', printEnd: false, buffOnly: true)
+      ].where((_) => _ != null));
     }
     if (requestBody && options.method != 'GET') {
       final dynamic data = options.data;
       if (data != null) {
         if (data is Map) {
-          printMapAsTable(options.data as Map?, header: 'Body');
+          logCache.write(printMapAsTable(
+            options.data as Map?,
+            header: 'Body',
+            buffOnly: true,
+          ));
         } else if (data is FormData) {
           final formDataMap = <String, dynamic>{}
             ..addEntries(data.fields)
             ..addEntries(data.files);
-          printMapAsTable(formDataMap, header: 'Form data | ${data.boundary}');
+          logCache.write(printMapAsTable(
+            formDataMap,
+            header: 'Form data | ${data.boundary}',
+          ));
         } else {
-          logPrint(genByJson(data));
+          final buff = StringBuffer(genByJson(data));
+          logCache.write(buff);
         }
       }
     }
+    // 一次性打印
+    logPrint(logCache.toString());
     handler.next(options);
   }
 
@@ -216,25 +240,31 @@ class EfficientDioLogger extends Interceptor {
       return;
     }
 
+    final buff = StringBuffer();
     final triggerTime = response.requestOptions.extra[_timeStampKey];
 
     int diff = 0;
     if (triggerTime is int) {
       diff = DateTime.timestamp().millisecondsSinceEpoch - triggerTime;
     }
-    printResponseHeader(response, diff);
+    buff.write(printResponseHeader(response, diff, buffOnly: true));
     if (responseHeader) {
       final responseHeaders = <String, String>{};
       response.headers
           .forEach((k, list) => responseHeaders[k] = list.toString());
-      printMapAsTable(responseHeaders, header: 'Headers');
+      buff.write(
+          printMapAsTable(responseHeaders, header: 'Headers', buffOnly: true));
     }
 
     if (responseBody) {
-      logPrint('╔ Body \n'
-          '${genByJson(response.data)}\n'
-          '${genLine('╚')}');
+      buff.write(StringBuffer(
+        '\t ╔ Body \n'
+        '${genByJson(response.data)}\n'
+        '${genLine('╚')}',
+      ));
     }
+
+    logPrint(buff.toString());
     handler.next(response);
   }
 
@@ -275,48 +305,67 @@ class EfficientDioLogger extends Interceptor {
   }
 
   /// 改写为一行打印
-  void printMapAsTable(Map? map, {String? header, printEnd = true}) {
-    if (map == null || map.isEmpty) return;
-    logPrint('╔ $header \n'
-        '${genByJson(map)}'
-        '${printEnd ? genLine('╚') : ''}');
+  StringBuffer? printMapAsTable(
+    Map? map, {
+    String? header,
+    printEnd = false,
+    bool buffOnly = false,
+  }) {
+    if (map == null || map.isEmpty) return StringBuffer();
+    final buff = StringBuffer(
+      '\t ╔ $header \n'
+      '${genByJson(map)}\n'
+      '${printEnd ? genLine('╚') : ''}',
+    );
+    if (!buffOnly) logPrint(buff);
+    return buffOnly ? buff : null;
   }
 
-  void printResponseHeader(Response response, int responseTime) {
+  StringBuffer? printResponseHeader(Response response, int responseTime,
+      {bool buffOnly = false}) {
     final uri = response.requestOptions.uri;
     final method = response.requestOptions.method;
     final rspEmoji = {
-          2: '✅', // 2xx: 200
+          2: '🟢', // 2xx: 200
           3: '↪️', // 3xx: redirect ...
           4: '❓', // 4xx: 403, 404 ...
           5: '❗', // 5xx:
         }[(response.statusCode ?? 200) % 100] ??
         '✔️';
-    printBoxed(
+    return printBoxed(
       header:
           '$rspEmoji Response ║ $method ║ Status: ${response.statusCode} ${response.statusMessage}  ║ Time: $responseTime ms ${EfficientDioLogger.tabStep}'
               .padRight(lineWidth ~/ 3 * 2, '<'),
       text: uri.toString(),
       printEnd: !responseBody,
+      buffOnly: buffOnly,
     );
   }
 
-  void printRequestHeader(RequestOptions options) {
+  StringBuffer? printRequestHeader(RequestOptions options,
+      {bool buffOnly = false}) {
     final uri = options.uri;
     final method = options.method;
-    printBoxed(
+    return printBoxed(
       header: '➡️ Request ║ $method ${EfficientDioLogger.tabStep}'
           .padRight(lineWidth ~/ 3 * 2, '>'),
       text: uri.toString(),
       printEnd: !requestHeader,
+      buffOnly: buffOnly,
     );
   }
 
   /// printEnd: 如果打印rsp同时又打印rspBody, 那么rsp无需 printEnd 分割线
-  void printBoxed({String? header, String? text, bool printEnd = true}) {
-    logPrint('╔╣ $header \n'
+  StringBuffer? printBoxed(
+      {String? header,
+      String? text,
+      bool printEnd = false,
+      bool buffOnly = false}) {
+    final buff = StringBuffer('╔╣ $header \n'
         '$text \n'
         '${printEnd ? genLine('╚') : ''}');
+    if (!buffOnly) logPrint(buff);
+    return buffOnly ? buff : null;
   }
 
   String genLine([String pre = '', String suf = '╝']) =>
