@@ -128,15 +128,16 @@ class EfficientDioLogger extends Interceptor {
     final triggerTime = err.requestOptions.extra[_timeStampKey];
 
     if (error) {
+      int diff = 0;
+      final now = DateTime.timestamp();
+      if (triggerTime is int) {
+        diff = now.millisecondsSinceEpoch - triggerTime;
+      }
       if (err.type == DioExceptionType.badResponse) {
         final uri = err.response?.requestOptions.uri;
-        int diff = 0;
-        if (triggerTime is int) {
-          diff = DateTime.timestamp().millisecondsSinceEpoch - triggerTime;
-        }
         logBuff.write(printBoxed(
           header:
-              '❌ DioError ║ Status: ${err.response?.statusCode} ${err.response?.statusMessage} ║ Time: $diff ms',
+              '❌ DioError ║ Status: ${err.response?.statusCode} ${err.response?.statusMessage} ║ Time: $now | $diff ms',
           text: uri.toString(),
           buffOnly: true,
         ));
@@ -146,11 +147,10 @@ class EfficientDioLogger extends Interceptor {
             '${genByJson(err.response?.data)}\n',
           ));
         }
-        // printLine('╚');
       } else {
         logBuff.write(printBoxed(
           header:
-              '❌ DioError ║ Status: ${err.response?.statusCode} ║ ${err.type}',
+              '❌ DioError ║ Status: ${err.response?.statusCode} ║ ${err.type} ║ Time: $now | $diff ms',
           text: '${err.requestOptions.uri}\n'
               '${err.message}',
           buffOnly: true,
@@ -334,7 +334,7 @@ class EfficientDioLogger extends Interceptor {
         '✔️';
     return printBoxed(
       header:
-          '$rspEmoji Response ║ $method ║ Status: ${response.statusCode} ${response.statusMessage}  ║ Time: $responseTime ms ${EfficientDioLogger.tabStep}'
+          '$rspEmoji Response ║ $method ║ Status: ${response.statusCode} ${response.statusMessage}  ║ Time: ${DateTime.now()} | $responseTime ms ${EfficientDioLogger.tabStep}'
               .padRight(lineWidth ~/ 3 * 2, '<'),
       text: uri.toString(),
       printEnd: !responseBody,
@@ -346,8 +346,9 @@ class EfficientDioLogger extends Interceptor {
       {bool buffOnly = false}) {
     final uri = options.uri;
     final method = options.method;
+    final now = DateTime.now();
     return printBoxed(
-      header: '➡️ Request ║ $method ${EfficientDioLogger.tabStep}'
+      header: '➡️ Request ║ $method ${EfficientDioLogger.tabStep} ║ Time: $now '
           .padRight(lineWidth ~/ 3 * 2, '>'),
       text: uri.toString(),
       printEnd: !requestHeader,
