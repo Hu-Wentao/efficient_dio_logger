@@ -138,7 +138,7 @@ class EfficientDioLogger extends Interceptor {
         logBuff.write(printBoxed(
           header:
               '❌ DioError ║ Status: ${err.response?.statusCode} ${err.response?.statusMessage} ║ Time: $now | $diff ms',
-          text: uri.toString(),
+          text: '\t $uri',
           buffOnly: true,
         ));
         if (err.response != null && err.response?.data != null) {
@@ -151,7 +151,7 @@ class EfficientDioLogger extends Interceptor {
         logBuff.write(printBoxed(
           header:
               '❌ DioError ║ Status: ${err.response?.statusCode} ║ ${err.type} ║ Time: $now | $diff ms',
-          text: '${err.requestOptions.uri}\n'
+          text: '\t ${err.requestOptions.uri}\n'
               '${err.message}',
           buffOnly: true,
         ));
@@ -260,7 +260,7 @@ class EfficientDioLogger extends Interceptor {
       buff.write(StringBuffer(
         '\t ╔ Body \n'
         '${genByJson(response.data)}\n'
-        '${genLine('╚')}',
+        '${genLine('\t ╚')}',
       ));
     }
 
@@ -315,7 +315,7 @@ class EfficientDioLogger extends Interceptor {
     final buff = StringBuffer(
       '\t ╔ $header \n'
       '${genByJson(map)}\n'
-      '${printEnd ? genLine('╚') : ''}',
+      '${printEnd ? genLine('\t ╚') : ''}',
     );
     if (!buffOnly) logPrint(buff);
     return buffOnly ? buff : null;
@@ -336,7 +336,7 @@ class EfficientDioLogger extends Interceptor {
       header:
           '$rspEmoji Response ║ $method ║ Status: ${response.statusCode} ${response.statusMessage}  ║ Time: ${DateTime.now()} | $responseTime ms ${EfficientDioLogger.tabStep}'
               .padRight(lineWidth ~/ 3 * 2, '<'),
-      text: uri.toString(),
+      text: '\t $uri',
       printEnd: !responseBody,
       buffOnly: buffOnly,
     );
@@ -350,7 +350,7 @@ class EfficientDioLogger extends Interceptor {
     return printBoxed(
       header: '➡️ Request ║ $method ${EfficientDioLogger.tabStep} ║ Time: $now '
           .padRight(lineWidth ~/ 3 * 2, '>'),
-      text: uri.toString(),
+      text: '\t $uri',
       printEnd: !requestHeader,
       buffOnly: buffOnly,
     );
@@ -364,7 +364,7 @@ class EfficientDioLogger extends Interceptor {
       bool buffOnly = false}) {
     final buff = StringBuffer('╔╣ $header \n'
         '$text \n'
-        '${printEnd ? genLine('╚') : ''}');
+        '${printEnd ? genLine('\t ╚') : ''}');
     if (!buffOnly) logPrint(buff);
     return buffOnly ? buff : null;
   }
