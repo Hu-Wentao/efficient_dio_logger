@@ -1,3 +1,6 @@
+## 0.3.0
+* feat print Error Type, message, stackTrace
+
 ## 0.2.1
 * fix EndLine indent; uri indent
  

@@ -137,8 +137,10 @@ class EfficientDioLogger extends Interceptor {
         final uri = err.response?.requestOptions.uri;
         logBuff.write(printBoxed(
           header:
-              '❌ DioError ║ Status: ${err.response?.statusCode} ${err.response?.statusMessage} ║ Time: $now | $diff ms',
-          text: '\t $uri',
+              '❌ Dio.BadResponse ║ Status: ${err.response?.statusCode} ${err.response?.statusMessage} ║ Time: $now | $diff ms',
+          text: '\t $uri\n'
+              '${err.message}\n'
+              '${err.stackTrace}\n',
           buffOnly: true,
         ));
         if (err.response != null && err.response?.data != null) {
@@ -152,7 +154,10 @@ class EfficientDioLogger extends Interceptor {
           header:
               '❌ DioError ║ Status: ${err.response?.statusCode} ║ ${err.type} ║ Time: $now | $diff ms',
           text: '\t ${err.requestOptions.uri}\n'
-              '${err.message}',
+              '${err.message}\n'
+              '${err.error}\n' // 用户可能通过拦截器处理并包装Error,此处调用包装后的Error.toString
+              'data: ${genByJson(err.response?.data)}\n'
+              '${err.stackTrace}\n',
           buffOnly: true,
         ));
       }
