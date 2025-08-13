@@ -1,3 +1,6 @@
+## 1.0.0 2025-8-13
+* fix decode Object type (Uint8List, MultiPartFile, ...) Error
+
 ## 0.3.0
 * feat print Error Type, message, stackTrace
 
