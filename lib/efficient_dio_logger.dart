@@ -274,13 +274,7 @@ class EfficientDioLogger extends Interceptor {
   }
 
   dynamic __processValue(dynamic value) {
-    if (value is String) {
-      // 处理字符串，限制长度
-      value = value.replaceAll('\n', '');
-      return (compact && value.length > maxWidth)
-          ? '${value.substring(0, maxWidth)}...'
-          : value;
-    } else if (value is Map<String, dynamic>) {
+    if (value is Map<String, dynamic>) {
       // 处理嵌套Map
       return {
         for (final entry in value.entries)
@@ -291,12 +285,17 @@ class EfficientDioLogger extends Interceptor {
       return [
         for (final item in value) __processValue(item),
       ];
-    } else if (value is Uint8List) {
-      // 处理图片
-      return __processValue(value.toString());
+      // } else if (value is Uint8List) {
+      //   // 处理图片
+      //   return __processValue(value.toString());
+    } else {
+      // 其他类型toString
+      // 处理字符串，限制长度
+      value = '$value'.replaceAll('\n', '');
+      return (compact && value.length > maxWidth)
+          ? '${value.substring(0, maxWidth)}...'
+          : value;
     }
-    // 其他类型保持不变
-    return value;
   }
 
   /// 返回json Str, 但是截取value的最大长度 [maxWidth]
