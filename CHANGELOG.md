@@ -1,3 +1,6 @@
+## 1.1.0 2025-8-22
+* feat EffDioLogger simple print all req/rsp/err data
+
 ## 1.0.0 2025-8-13
 * fix decode Object type (Uint8List, MultiPartFile, ...) Error
 
