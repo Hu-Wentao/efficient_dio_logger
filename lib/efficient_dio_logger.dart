@@ -5,10 +5,12 @@ import 'dart:developer';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:efficient_dio_logger/eff_dio_logger.dart';
+export 'eff_dio_logger.dart';
 
 const _timeStampKey = '_pdl_timeStamp_';
 
-class EfficientDioLogger extends Interceptor {
+class EfficientDioLogger extends EffDioLogger {
   /// Print request [Options]
   final bool request;
 
@@ -33,25 +35,11 @@ class EfficientDioLogger extends Interceptor {
   /// 1 tab length
   static const String tabStep = '    ';
 
-  /// Print compact json response
-  final bool compact;
-
-  /// Width size per logPrint
-  final int maxWidth;
-
   /// Size in which the Uint8List will be split
   static const int chunkSize = 20;
 
-  /// Log printer; defaults logPrint log to console.
-  /// In flutter, you'd better use debugPrint.
-  /// you can also write log in a file.
-  final void Function(Object object) logPrint;
-
   /// Filter request/response by [RequestOptions]
   final bool Function(RequestOptions options, FilterArgs args)? filter;
-
-  /// Enable logPrint
-  final bool enabled;
 
   /// Determine the width of the dividing line [printLine]
   /// 决定分割线的宽度 [printLine]
@@ -101,17 +89,17 @@ class EfficientDioLogger extends Interceptor {
 
     /// The maximum length of a single string. If it exceeds the maximum length, it will be truncated. It is used to truncate the overlong text value of JSON. It is usually set to twice [lineWidth].
     /// 单个string最大长度,超过将被截断; 用于截断json的超长文本value;一般设为[lineWidth]的2倍
-    this.maxWidth = 324,
+    super.maxWidth = 324,
 
     /// Whether to truncate large text
     /// 是否截断大文本
-    this.compact = true,
+    super.compact = true,
 
     /// logPrint: (l) => log('$l', name: 'EfficientDioLogger'),
-    this.logPrint = print,
+    super.logPrint = print,
 
     /// enabled: kDebugMode,
-    this.enabled = true,
+    super.enabled = true,
   });
 
   @override
@@ -273,40 +261,40 @@ class EfficientDioLogger extends Interceptor {
     handler.next(response);
   }
 
-  dynamic __processValue(dynamic value) {
-    if (value is Map<String, dynamic>) {
-      // 处理嵌套Map
-      return {
-        for (final entry in value.entries)
-          entry.key: __processValue(entry.value),
-      };
-    } else if (value is List) {
-      // 处理List
-      return [
-        for (final item in value) __processValue(item),
-      ];
-      // } else if (value is Uint8List) {
-      //   // 处理图片
-      //   return __processValue(value.toString());
-    } else {
-      // 其他类型toString
-      // 处理字符串，限制长度
-      value = '$value'.replaceAll('\n', '');
-      return (compact && value.length > maxWidth)
-          ? '${value.substring(0, maxWidth)}...'
-          : value;
-    }
-  }
+  // dynamic __processValue(dynamic value) {
+  //   if (value is Map<String, dynamic>) {
+  //     // 处理嵌套Map
+  //     return {
+  //       for (final entry in value.entries)
+  //         entry.key: __processValue(entry.value),
+  //     };
+  //   } else if (value is List) {
+  //     // 处理List
+  //     return [
+  //       for (final item in value) __processValue(item),
+  //     ];
+  //     // } else if (value is Uint8List) {
+  //     //   // 处理图片
+  //     //   return __processValue(value.toString());
+  //   } else {
+  //     // 其他类型toString
+  //     // 处理字符串，限制长度
+  //     value = '$value'.replaceAll('\n', '');
+  //     return (compact && value.length > maxWidth)
+  //         ? '${value.substring(0, maxWidth)}...'
+  //         : value;
+  //   }
+  // }
 
-  /// 返回json Str, 但是截取value的最大长度 [maxWidth]
-  /// input 可能为 null
-  String genByJson(dynamic input) {
-    var data = __processValue(input);
-    if (data is Map || data is List) {
-      data = jsonEncode(data);
-    }
-    return '$data';
-  }
+  // /// 返回json Str, 但是截取value的最大长度 [maxWidth]
+  // /// input 可能为 null
+  // String genByJson(dynamic input) {
+  //   var data = __processValue(input);
+  //   if (data is Map || data is List) {
+  //     data = jsonEncode(data);
+  //   }
+  //   return '$data';
+  // }
 
   /// 改写为一行打印
   StringBuffer? printMapAsTable(
