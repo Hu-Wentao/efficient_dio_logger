@@ -1,6 +1,5 @@
 library efficient_dio_logger;
 
-import 'dart:convert';
 import 'dart:developer';
 import 'dart:typed_data';
 
